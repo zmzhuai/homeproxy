@@ -49,6 +49,10 @@ if (github_token) {
 	uci.delete(uciconfig, uciinfra, 'github_token')
 }
 
+/* ntp_server was introduced */
+if (!uci.get(uciconfig, uciinfra, 'ntp_server'))
+	uci.set(uciconfig, uciinfra, 'ntp_server', 'nil');
+
 /* tun_gso was deprecated in sb 1.11 */
 if (!isEmpty(uci.get(uciconfig, uciinfra, 'tun_gso')))
 	uci.delete(uciconfig, uciinfra, 'tun_gso');
@@ -96,7 +100,7 @@ const dns_server_migration = {};
 uci.foreach(uciconfig, ucidnsserver, (cfg) => {
 	/* legacy format was deprecated in sb 1.12 */
 	if (cfg.address) {
-		const addr = parseURL((!match(cfg.address, /:\/\//) ? 'udp://' : '') + cfg.address);
+		const addr = parseURL((!match(cfg.address, /:\/\//) ? 'udp://' : '') + (validation('ip6addr', cfg.address) ? `[${cfg.address}]` : cfg.address));
 		/* RCode was moved into DNS rules */
 		if (addr.protocol === 'rcode') {
 			dns_server_migration[cfg['.name']] = { action: 'predefined' };
